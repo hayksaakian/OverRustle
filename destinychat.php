@@ -162,71 +162,45 @@ if($t == "")
 </nav>
 
     <div class="container-full fill">
-        <div class="pull-left stream-box" id="map">
+      <div class="pull-left stream-box" id="map">
+        <iframe width="100%" height="100%" marginheight="0" marginwidth="0" frameborder="0" src="http://www.twitch.tv/followgrubby/embed" scrolling="no"></iframe>
+      </div>
+      <div class="pull-right" id="map" style="width: 390px;">
+
+      <!-- TODO: support other chat options than twitch -->
+      <div>
+        <ul class="nav nav-pills" role="tablist" style="
+            position: absolute;
+            width: 100%;
+            background: #222;
+        ">
+          <li class="active"><a href="#destinychat" role="tab" data-toggle="tab">Destiny Chat</a></li>
+          <li><a href="#otherchat" role="tab" data-toggle="tab"><?php $s; ?> Chat</a></li>
+        </ul>
+      </div>
+
+      <div class="tab-content" style="height: 100%;">
+        <div class="tab-pane fade active in" id="destinychat" style="height: 100%;">
+          <iframe width="100%" marginheight="0" marginwidth="0" frameborder="0" src="http://destiny.gg/embed/chat" scrolling="no" style="height: 100%;"></iframe>
+        </div>
+        <div class="tab-pane fade" id="otherchat" style="height: 100%;">
         <?php
-        switch($s) 
+        if ($s == "twitch")
         {
-          case "twitch":
-            echo '<iframe width="100%" height="100%" marginheight="0" marginwidth="0" frameborder="0" src="http://www.twitch.tv/' . $stream . '/embed" scrolling="no"></iframe>';
-            break;          
-            
-          case "twitch-vod":
-            echo "
-              <object data='http://www.twitch.tv/widgets/archive_embed_player.swf' id='clip_embed_player_flash' type='application/x-shockwave-flash' width='100%' height='100%'>
-                <param name='movie' value='http://www.twitch.tv/widgets/archive_embed_player.swf' />
-                <param name='allowScriptAccess' value='always' />
-                <param name='allowNetworking' value='all' />
-                <param name='allowFullScreen' value='true' />
-                <param name='flashvars' value='initial_time=" . $t . "&start_volume=25&auto_play=true&archive_id=" . $stream . "' />
-              </object>";
-            break;
-
-          case "advanced":
-            echo '<iframe width="100%" height="100%" marginheight="0" marginwidth="0" frameborder="0" src="' . $stream . '" scrolling="yes"></iframe>';
-            break;
-
-          case "castamp":
-            if (strlen(strstr($_SERVER['HTTP_USER_AGENT'], 'Firefox')) > 0) 
-            {
-              echo '<script type="text/javascript"> channel="' . $stream . '"; vwidth="1280"; vheight="720";</script><script type="text/javascript" src="http://castamp.com/embed.js"></script>'; 
-            }
-            else
-            {
-              echo '<script type="text/javascript"> channel="' . $stream . '";</script><script type="text/javascript" src="js/castamp.js"></script>';
-            }
-            break;
-
-          case "hitbox":
-            echo '<iframe width="100%" height="100%" marginheight="0" marginwidth="0" frameborder="0" src="http://www.hitbox.tv/embed/' . $stream . '?autoplay=true" scrolling="no"></iframe>';
-            break; //stop fucking asking, I'm not going to add azubu TV. It's shit and so are you for thinking about it     
-            
-          case "youtube":
-            echo '<iframe width="100%" height="100%" marginheight="0" marginwidth="0" frameborder="0" src="http://www.youtube.com/embed/' . $stream . '?autoplay=1&start=' . $t . '" scrolling="no"></iframe>';
-            break;
-            
-          case "mlg":
-            echo '<iframe width="100%" height="100%" marginheight="0" marginwidth="0" frameborder="0" src="http://www.teamliquid.net/video/streams/' . $stream . '/popout" scrolling="no"></iframe>';
-            break;
-            
-          case "ustream":
-            echo '<iframe width="100%" height="100%" marginheight="0" marginwidth="0" frameborder="0" src="http://www.ustream.tv/embed/' . $stream . '?v=3&wmode=direct&autoplay=true" scrolling="no"></iframe>';
-            break;
-
-          case "dailymotion":
-            echo '<iframe width="100%" height="100%" marginheight="0" marginwidth="0" frameborder="0" src="http://www.dailymotion.com/embed/video/' . $stream . '" scrolling="no"></iframe>';
-            break;
-
-          case "strims":
-            echo '<iframe width="100%" height="100%" marginheight="0" marginwidth="0" frameborder="0" src="/strims"></iframe>';
+          echo '<iframe width="100%" height="100%" marginheight="0" marginwidth="0" frameborder="0" src="http://www.twitch.tv/' . $stream . '/chat?popout=" scrolling="no"></iframe>';
+        }
+        else
+        {
+          echo '<h2>' . $s . ' chat is unsupported</h2>';
         }
         ?>
         </div>
-
-        <div class="pull-right" id="map" style="width: 390px;">
-          <iframe width="100%" height="100%" marginheight="0" marginwidth="0" frameborder="0" src="http://destiny.gg/embed/chat" scrolling="no"></iframe>
-        </div>
+      </div>
     </div>
-    <script src="js/bootstrap.min.js"></script>
-    <script src="js/overrustle.js"></script>
+  </div>
+  <script src="js/bootstrap.min.js"></script>
+  <!-- Nav tabs -->
+  <script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.1.1/js/tab.min.js"></script>
+  <script src="js/overrustle.js"></script>
   </body>
 </html>
