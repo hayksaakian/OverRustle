@@ -13,6 +13,21 @@ if($s == "" && $stream == "")
   $s = "strims";
 }
 
+<<<<<<< HEAD
+=======
+//fuck people embeding the site right in the pussy 
+if(strpos($stream,'destiny.gg') !== false || (strpos($stream,'overrustle.com') !== false))
+{
+  header('Location: http://overrustle.com/destinychat');
+}
+
+//block scyx. KYS scyx17
+if (strpos($stream,'scy') !== false) {
+  echo "SCY? more like KYS.";
+  exit;
+}
+
+>>>>>>> Banning SCYX17. NoTears
 //if no time is set start from the beginning
 if(empty($t))
 {
