@@ -68,6 +68,7 @@ def sweepStreams():
 	to_remove = []
 	for strim in strims:
 <<<<<<< HEAD
+<<<<<<< HEAD
 		if(strims[strim] <= 0):
 =======
 <<<<<<< HEAD
@@ -80,9 +81,11 @@ def sweepStreams():
 		if(len(strims[strim]) == 0):
 >>>>>>> bugfix
 >>>>>>> bugfix
+=======
+		if(strims[strim] <= 0):
+>>>>>>> delete many at once vs one at a time
 			to_remove.append(strim)
-	for strim in to_remove:
-		res = yield tornado.gen.Task(c.hdel, 'strims', strim)
+	res = yield tornado.gen.Task(c.hdel, 'strims', to_remove)
 
 @tornado.gen.engine
 def remove_viewer(v_id):
@@ -150,7 +153,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 	def on_connection_timeout(self):
 		print "-- Client timed out after 1 minute"
 		# this might be redundant and redundant
-		self.on_close()
+		remove_viewer(self.id)
 		self.close()
 
 	@tornado.gen.engine
@@ -163,7 +166,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 			self.ping_timeout = self.io_loop.add_timeout(datetime.timedelta(seconds=ping_every), self.on_connection_timeout)
 		except Exception as ex:
 			print("-- Failed to send ping! to: "+ self.id + " because of " + repr(ex))
-			self.on_close()
+			self.on_connection_timeout()
 		
 	@tornado.gen.engine
 	def on_pong(self, data):
