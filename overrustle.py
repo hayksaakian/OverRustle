@@ -135,10 +135,14 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 		res = yield tornado.gen.Task(self.client.hset, 'last_pong_time', self.id, time.time())
 		if res != True:
 <<<<<<< HEAD
+<<<<<<< HEAD
 			print "creating last_pong_time on open is messed up with:", self.id, res
 =======
 			print "creating last_pong_time is messed up with:", self.id, res
 >>>>>>> ravenously record redis responses
+=======
+			print "creating last_pong_time on open is messed up with:", self.id, res
+>>>>>>> distinguish two lines
 		# Ping to make sure the agent is alive.
 		self.io_loop.add_timeout(datetime.timedelta(seconds=(ping_every/3)), self.send_ping)
 	
@@ -175,10 +179,14 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 			res = yield tornado.gen.Task(c.hset, 'last_pong_time', self.id, time.time())
 			if res != True:
 <<<<<<< HEAD
+<<<<<<< HEAD
 				print "creating last_pong_time on_pong is messed up with:", self.id, res
 =======
 				print "creating last_pong_time is messed up with:", self.id, res
 >>>>>>> ravenously record redis responses
+=======
+				print "creating last_pong_time on_pong is messed up with:", self.id, res
+>>>>>>> distinguish two lines
 			# Wait some seconds before pinging again.
 			global ping_every
 			self.io_loop.add_timeout(datetime.timedelta(seconds=ping_every), self.send_ping)
