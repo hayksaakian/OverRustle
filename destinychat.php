@@ -21,8 +21,16 @@ if(strpos($stream,'destiny.gg') !== false || (strpos($stream,'overrustle.com') !
   header('Location: http://overrustle.com/destinychat');
 }
 
+<<<<<<< HEAD
 //load in the blacklist
 include ('blacklist.php');
+=======
+//block scyx. KYS scyx17
+if (strpos($stream,'scy') !== false) {
+  echo "SCY? more like KYS.";
+  exit;
+}
+>>>>>>> Banning SCYX17. NoTears
 
 >>>>>>> Banning SCYX17. NoTears
 //if no time is set start from the beginning
