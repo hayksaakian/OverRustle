@@ -78,6 +78,8 @@ def remove_viewer(v_id):
 	strim = yield tornado.gen.Task(c.hget, 'clients', v_id)
 	if strim != '':
 		res = yield tornado.gen.Task(c.hincrby, 'strims', strim, -1)
+		if res <= 0:
+			res = yield tornado.gen.Task(c.hdel, 'strims', strim)
 	else:
 		print 'deleting strim-less vid:', v_id
 	res = yield tornado.gen.Task(c.hdel, 'clients', v_id)
