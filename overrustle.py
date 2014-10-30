@@ -114,9 +114,13 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 		print 'Opened Websocket connection: (' + self.request.remote_ip + ') ' + socket.getfqdn(self.request.remote_ip) + " id: " + self.id
 		clients[self.id] = {'id': self.id}
 		res = yield tornado.gen.Task(self.client.hset, 'clients', self.id, '')
+		if res != True:
+			print "creating client is messed up with:", self.id, res
 		len_clients = yield tornado.gen.Task(self.client.hlen, 'clients')
 		print len_clients
 		res = yield tornado.gen.Task(self.client.hset, 'last_pong_time', self.id, time.time())
+		if res != True:
+			print "creating last_pong_time is messed up with:", self.id, res
 		# Ping to make sure the agent is alive.
 		self.io_loop.add_timeout(datetime.timedelta(seconds=(ping_every/3)), self.send_ping)
 	
@@ -151,6 +155,8 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 		in_clients = yield tornado.gen.Task(c.hexists, 'clients', self.id)
 		if in_clients:
 			res = yield tornado.gen.Task(c.hset, 'last_pong_time', self.id, time.time())
+			if res != True:
+				print "creating last_pong_time is messed up with:", self.id, res
 			# Wait some seconds before pinging again.
 			global ping_every
 			self.io_loop.add_timeout(datetime.timedelta(seconds=ping_every), self.send_ping)
@@ -168,6 +174,8 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 		#handle session counting - This is a fucking mess :^(
 		if fromClient[u'action'] == "join":
 			res = yield tornado.gen.Task(self.client.hset, 'clients', self.id, fromClient[u'strim'])
+			if res != True:
+				print "joining strim is messed up with:", self.id, res
 			strim_count = yield tornado.gen.Task(self.client.hincrby, 'strims', fromClient[u'strim'], 1)
 			self.write_message(str(strim_count) + " OverRustle.com Viewers")
 			print 'User Connected: Watching %s' % (fromClient[u'strim'])
@@ -191,6 +199,8 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 		strim_count = yield tornado.gen.Task(self.client.hget, 'strims', fromClient[u'strim'])
 		if strim_count <= 0:
 			res = yield tornado.gen.Task(c.hdel, 'strims', fromClient[u'strim'])
+			if res != True:
+				print "removing strim is messed up with:", self.id, res
 
 	@tornado.gen.engine
 	def on_close(self):
