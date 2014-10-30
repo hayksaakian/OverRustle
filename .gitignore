@@ -218,7 +218,11 @@ pip-log.txt
 ## Custom
 #############
 blacklist.php
+<<<<<<< HEAD
 destinychat_beta.php
 config.php
 composer.lock
 vendor/
+=======
+destinychat_beta.php
+>>>>>>> Added function for blacklisting users/IPs
