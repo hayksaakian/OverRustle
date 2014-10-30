@@ -139,6 +139,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 		if res != True:
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 			print "creating last_pong_time on open is messed up with:", self.id, res
 =======
 			print "creating last_pong_time is messed up with:", self.id, res
@@ -146,6 +147,9 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 =======
 			print "creating last_pong_time on open is messed up with:", self.id, res
 >>>>>>> distinguish two lines
+=======
+			print "creating last_pong_time is messed up with:", self.id, res
+>>>>>>> ravenously record redis responses
 		# Ping to make sure the agent is alive.
 		self.io_loop.add_timeout(datetime.timedelta(seconds=(ping_every/3)), self.send_ping)
 	
@@ -183,6 +187,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 			if res != True:
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 				print "creating last_pong_time on_pong is messed up with:", self.id, res
 =======
 				print "creating last_pong_time is messed up with:", self.id, res
@@ -190,6 +195,9 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 =======
 				print "creating last_pong_time on_pong is messed up with:", self.id, res
 >>>>>>> distinguish two lines
+=======
+				print "creating last_pong_time is messed up with:", self.id, res
+>>>>>>> ravenously record redis responses
 			# Wait some seconds before pinging again.
 			global ping_every
 			self.io_loop.add_timeout(datetime.timedelta(seconds=ping_every), self.send_ping)
