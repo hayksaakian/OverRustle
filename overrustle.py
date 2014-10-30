@@ -215,7 +215,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 
 		elif fromClient[u'action'] == "unjoin":
 			print 'User Disconnected: Was Watching %s' % (fromClient[u'strim'])
-			self.on_close()
+			self.on_connection_timeout()
 
 		elif fromClient[u'action'] == "viewerCount":
 			strim_count = yield tornado.gen.Task(self.client.hget, 'strims', fromClient[u'strim'])
