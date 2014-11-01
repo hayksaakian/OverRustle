@@ -72,8 +72,9 @@ include('blacklist.php');
       ga('create', 'UA-49711133-1', 'overrustle.com');
       ga('send', 'pageview');
     </script>
+  <script type="text/javascript" src="/js/reconnecting-websocket.js"></script>
    <script>
-    var ws = new WebSocket("ws://OverRustle.com:9998/ws");
+    var ws = new ReconnectingWebSocket("ws://OverRustle.com:9998/ws");
 
     var sendObj = new Object();
     sendObj.strim = "/channel?user=<?php echo $user['name'] ?>";
