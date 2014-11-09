@@ -103,12 +103,6 @@ require_once 'blacklist.php';
 
     //update the viewer count every 5 seconds
     window.setInterval(function(){overRustleAPI()}, 5000);
-
-    //On Disconnect
-    $(window).on('beforeunload', function() {
-      sendObj.action = "unjoin";
-      ws.send(JSON.stringify(sendObj));
-    });
     </script>
   </head>
 

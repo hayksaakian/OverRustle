@@ -36,10 +36,10 @@ def numClients():
 
 #takes care of updating console
 def printStatus():
-	threading.Timer(240, printStatus).start()
+	threading.Timer(24, printStatus).start()
 	print 'Currently connected clients: ' + str(numClients())
-	sweepClients()
-	sweepStreams()
+	yield sweepClients()
+	yield sweepStreams()
 	strim_counts = strimCounts()
 	for key, value in strim_counts.items():
 		print key, value
@@ -59,6 +59,7 @@ def sweepClients():
 	for client_id in to_remove:
 		remove_viewer(client_id)
 
+#remove the dict key if nobody is watching DaFeels
 @tornado.gen.engine
 def sweepStreams():
 	strims = yield tornado.gen.Task(c.hgetall, 'strims')
@@ -189,10 +190,6 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 			self.write_message(str(strim_count) + " OverRustle.com Viewers")
 			print 'User Connected: Watching %s' % (strim)
 
-		elif action == "unjoin":
-			print 'User Disconnected: Was Watching %s' % (strim)
-			self.on_connection_timeout()
-
 		elif action == "viewerCount":
 			strim_count = yield tornado.gen.Task(self.client.hget, 'strims', strim)
 			self.write_message(str(strim_count) + " OverRustle.com Viewers")
@@ -202,14 +199,6 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 
 		else:
 			print 'WTF: Client sent unknown command >:( %s' % (action)
-
-
-		#remove the dict key if nobody is watching DaFeels
-		strim_count = yield tornado.gen.Task(self.client.hget, 'strims', strim)
-		if strim_count <= 0:
-			num_deleted = yield tornado.gen.Task(c.hdel, 'strims', strim)
-			if num_deleted == 0:
-				print "removing strim is messed up with:", self.id, "num_deleted is ", str(num_deleted)
 
 	@tornado.gen.engine
 	def on_close(self):

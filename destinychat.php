@@ -1,38 +1,14 @@
 <?php
 require_once 'session.php';
-
 $stream = empty($_GET['stream']) ? '' : addslashes(strip_tags(trim($_GET['stream'])));
 $s = empty($_GET['s']) ? '' : addslashes(strip_tags(strtolower(trim($_GET['s']))));
 $t = empty($_GET['t']) ? '' : addslashes(strip_tags(strtolower(trim($_GET['t']))));
-
 require_once 'blacklist.php';
-
 //set the default stream time to twitch
 if($s == "" && $stream == "")
 {
   $s = "strims";
 }
-
-<<<<<<< HEAD
-=======
-//fuck people embeding the site right in the pussy 
-if(strpos($stream,'destiny.gg') !== false || (strpos($stream,'overrustle.com') !== false))
-{
-  header('Location: http://overrustle.com/destinychat');
-}
-
-<<<<<<< HEAD
-//load in the blacklist
-include ('blacklist.php');
-=======
-//block scyx. KYS scyx17
-if (strpos($stream,'scy') !== false) {
-  echo "SCY? more like KYS.";
-  exit;
-}
->>>>>>> Banning SCYX17. NoTears
-
->>>>>>> Banning SCYX17. NoTears
 //if no time is set start from the beginning
 if(empty($t))
 {
@@ -114,12 +90,6 @@ if(empty($t))
 
     //update the viewer count every 5 seconds
     window.setInterval(function(){overRustleAPI()}, 5000);
-
-    //On Disconnect 
-    $(window).on('beforeunload', function() {
-      sendObj.action = "unjoin";
-      ws.send(JSON.stringify(sendObj));
-    });
     </script>
     <?php
     if ($s == "twitch")
