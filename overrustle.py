@@ -36,23 +36,27 @@ def numClients():
 
 #takes care of updating console
 def printStatus():
-	threading.Timer(24, printStatus).start()
-	print 'Currently connected clients: ' + str(numClients())
-	yield sweepClients()
-	yield sweepStreams()
+	trd = threading.Timer(2, printStatus)
+	trd.daemon = True # lets us use Ctrl+C to kill python's threads
+	trd.start()
+	print str(numClients()), 'Currently connected clients: '
+	sweepClients()
+	sweepStreams()
 	strim_counts = strimCounts()
 	for key, value in strim_counts.items():
 		print key, value
 
-@tornado.gen.engine
 def sweepClients():
 	global ping_every
-	clients = yield tornado.gen.Task(c.hkeys, 'clients')
+	clients = r.hkeys('clients')
+	if isinstance(clients, int):
+		print 'got', clients, 'instead of actual clients'
+		return
 	to_remove = []
-	expire_time = (time.time()-(5*ping_every))
+	expire_time = (time.time()-(3*ping_every))
 	for client_id in clients:
 		# client = clients[client_id]
-		lpt = yield tornado.gen.Task(c.hget, 'last_pong_time', client_id)
+		lpt = r.hget('last_pong_time', client_id)
 		if (((lpt == '') or (lpt == None)) or (float(lpt) < expire_time)):
 			# if(("last_pong_time" in client) and (client["last_pong_time"] < (t_now-(5*ping_every)))):
 			to_remove.append(client_id)
@@ -60,24 +64,23 @@ def sweepClients():
 		remove_viewer(client_id)
 
 #remove the dict key if nobody is watching DaFeels
-@tornado.gen.engine
 def sweepStreams():
 	try:
-		strims = yield tornado.gen.Task(c.hgetall, 'strims')
+		strims = r.hgetall('strims')
 	except Exception, e:
 		print 'ERROR: Failed to get all strims from redis in order to sweep'
 		print e
-	else:
-		if isinstance(strims, int):
-			print 'got', strims, 'instead of actual strims'
-			return
-		to_remove = []
-		for strim in strims:
-			if(strims[strim] <= 0):
-				to_remove.append(strim)
-		num_deleted = yield tornado.gen.Task(c.hdel, 'strims', to_remove)
-		print "deleted this many strims: ", str(num_deleted)
-		print "should have deleted this many: ", str(len(to_remove)) 
+		return
+	if isinstance(strims, int):
+		print 'got', strims, 'instead of actual strims'
+		return
+	to_remove = []
+	for strim in strims:
+		if(strims[strim] <= 0):
+			to_remove.append(strim)
+	if(len(to_remove) > 0):
+		num_deleted = r.hdel('strims', to_remove)
+		print "deleted this many strims: ", str(num_deleted), "should have deleted this many: ", str(len(to_remove)) 
 
 @tornado.gen.engine
 def remove_viewer(v_id):
@@ -90,13 +93,13 @@ def remove_viewer(v_id):
 			if num_deleted == 0:
 				print "deleting this strim counter did not work : ", strim 
 	else:
-		print 'deleting strim-less vid:', v_id
+		print 'deleting a client that was not tied to a strim:', v_id
 	clients_deleted = yield tornado.gen.Task(c.hdel, 'clients', v_id)
 	if clients_deleted == 0:
-		print "deleting this client did not work: ", v_id
+		print "deleting this client was redundant: ", v_id
 	pong_times_deleted = yield tornado.gen.Task(c.hdel, 'last_pong_time', v_id)
 	if pong_times_deleted == 0:
-		print "deleting this pong tracker did not work: ", v_id
+		print "deleting this pong tracker was redundant: ", v_id
 	print str(numClients()) + " viewers remain connected"
 
 #ayy lmao
@@ -124,16 +127,16 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 		clients[self.id] = {'id': self.id}
 		client_set_or_updated = yield tornado.gen.Task(self.client.hset, 'clients', self.id, '')
 		if client_set_or_updated == 1:
-			print client_set_or_updated, "creating new client id: ", self.id
+			print "redis: ", client_set_or_updated, "creating new client id: ", self.id
 		else:
-			print client_set_or_updated, "WARN: updating old client id: ", self.id
-		len_clients = yield tornado.gen.Task(self.client.hlen, 'clients')
-		print 'len_clients is ', len_clients
+			print "redis: ", client_set_or_updated, "WARN: updating old client id: ", self.id
 		lpt_set_or_updated = yield tornado.gen.Task(self.client.hset, 'last_pong_time', self.id, time.time())
 		if lpt_set_or_updated == 1:
-			print lpt_set_or_updated, "creating last_pong_time on open with:", self.id, lpt_set_or_updated
+			print "redis:", lpt_set_or_updated, "creating last_pong_time on open with:", self.id
 		else:
-			print lpt_set_or_updated, "WARN: updating last_pong_time on open with:", self.id, lpt_set_or_updated
+			print "redis:", lpt_set_or_updated, "WARN: updating last_pong_time on open with:", self.id, lpt_set_or_updated
+		len_clients = yield tornado.gen.Task(self.client.hlen, 'clients')
+		print 'len_clients is', len_clients
 		# Ping to make sure the agent is alive.
 		self.io_loop.add_timeout(datetime.timedelta(seconds=(ping_every/3)), self.send_ping)
 	
@@ -167,9 +170,10 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 
 		in_clients = yield tornado.gen.Task(c.hexists, 'clients', self.id)
 		if in_clients:
-			res = yield tornado.gen.Task(c.hset, 'last_pong_time', self.id, time.time())
-			if res != True:
-				print "creating last_pong_time on_pong is messed up with:", self.id, res
+			created_or_updated = yield tornado.gen.Task(c.hset, 'last_pong_time', self.id, time.time())
+			if created_or_updated != 0:
+				# 0 means the field was updated
+				print "redis:", created_or_updated, "creating last_pong_time on_pong is messed up with:", self.id
 			# Wait some seconds before pinging again.
 			global ping_every
 			self.io_loop.add_timeout(datetime.timedelta(seconds=ping_every), self.send_ping)
@@ -188,9 +192,10 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 
 		#handle session counting - This is a fucking mess :^(
 		if action == "join":
-			res = yield tornado.gen.Task(self.client.hset, 'clients', self.id, strim)
-			if res != True:
-				print "joining strim is messed up with:", self.id, res
+			created_or_updated_client = yield tornado.gen.Task(self.client.hset, 'clients', self.id, strim)
+			if created_or_updated_client != 1:
+				# 1 means the already existing key was updated, 0 means it was created
+				print "joining strim is messed up with:", self.id, created_or_updated_client
 			strim_count = yield tornado.gen.Task(self.client.hincrby, 'strims', strim, 1)
 			self.write_message(str(strim_count) + " OverRustle.com Viewers")
 			print 'User Connected: Watching %s' % (strim)
