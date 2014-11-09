@@ -85,21 +85,21 @@ def sweepStreams():
 @tornado.gen.engine
 def remove_viewer(v_id):
 	global c
+	in_clients = yield tornado.gen.Task(c.hexists, 'clients', v_id)
 	strim = yield tornado.gen.Task(c.hget, 'clients', v_id)
-	if strim != '':
-		new_count = yield tornado.gen.Task(c.hincrby, 'strims', strim, -1)
-		if new_count <= 0:
-			num_deleted = yield tornado.gen.Task(c.hdel, 'strims', strim)
-			if num_deleted == 0:
-				print "deleting this strim counter did not work : ", strim 
-	else:
-		print 'deleting a client that was not tied to a strim:', v_id
-	clients_deleted = yield tornado.gen.Task(c.hdel, 'clients', v_id)
-	if clients_deleted == 0:
-		print "deleting this client was redundant: ", v_id
+	if in_clients:
+		if strim != '':
+			new_count = yield tornado.gen.Task(c.hincrby, 'strims', strim, -1)
+			if new_count <= 0:
+				num_deleted = yield tornado.gen.Task(c.hdel, 'strims', strim)
+				if num_deleted == 0:
+					print "deleting this strim counter did not work : ", strim 
+		else:
+			print 'deleting a client that was not tied to a strim:', v_id
+		clients_deleted = yield tornado.gen.Task(c.hdel, 'clients', v_id)
 	pong_times_deleted = yield tornado.gen.Task(c.hdel, 'last_pong_time', v_id)
 	if pong_times_deleted == 0:
-		print "deleting this pong tracker was redundant: ", v_id
+		print "redis:", pong_times_deleted, v_id, "deleting this pong tracker was redundant"
 	print str(numClients()) + " viewers remain connected"
 
 #ayy lmao
@@ -150,7 +150,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 	@tornado.gen.engine
 	def send_ping(self):
 
-		print("<- [PING] " + self.id)
+		print("<- [PING]", self.id)
 		try:
 			self.ping(self.id)
 			# global ping_every
@@ -163,7 +163,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 	def on_pong(self, data):
 		# We received a pong, remove the timeout so that we don't
 		# kill the connection.
-		print("-> [PONG] %s" % data)
+		print("-> [PONG]", data)
 
 		if hasattr(self, "ping_timeout"):
 			self.io_loop.remove_timeout(self.ping_timeout)
