@@ -39,16 +39,17 @@ def printStatus():
 	trd = threading.Timer(2, printStatus)
 	trd.daemon = True # lets us use Ctrl+C to kill python's threads
 	trd.start()
-	print str(numClients()), 'Currently connected clients: '
+	print str(numClients()), 'clients connected right now'
 	sweepClients()
 	sweepStreams()
 	strim_counts = strimCounts()
+	# print len(strim_counts), "unique strims"
 	for key, value in strim_counts.items():
 		print key, value
 
 def sweepClients():
 	global ping_every
-	clients = r.hkeys('clients')
+	clients = r.hgetall('clients')
 	if isinstance(clients, int):
 		print 'got', clients, 'instead of actual clients'
 		return
@@ -57,11 +58,24 @@ def sweepClients():
 	for client_id in clients:
 		# client = clients[client_id]
 		lpt = r.hget('last_pong_time', client_id)
+		# print lpt, expire_time
 		if (((lpt == '') or (lpt == None)) or (float(lpt) < expire_time)):
 			# if(("last_pong_time" in client) and (client["last_pong_time"] < (t_now-(5*ping_every)))):
 			to_remove.append(client_id)
 	for client_id in to_remove:
-		remove_viewer(client_id)
+		print "removing", client_id
+		# don't call remove_viewer because it's async and causes a race condition
+		# with the sync code
+		# decrement the appropriate stream, unless there isn't one
+		if clients[client_id] != "" and clients[client_id] != None:
+			new_count = r.hincrby(clients[client_id], -1)
+			if new_count <= 0:
+				r.hdel('strims', clients[client_id])
+		print 'done removing', client_id
+	if len(to_remove) > 0:
+		lpts_removed = r.hdel('last_pong_time', *to_remove)
+		clients_removed = r.hdel('clients', *to_remove)
+		print 'done removing all', lpts_removed, 'out of', len(to_remove), 'last_pong_time entries', clients_removed, 'out of', len(to_remove), 'clients', to_remove
 
 #remove the dict key if nobody is watching DaFeels
 def sweepStreams():
@@ -76,31 +90,14 @@ def sweepStreams():
 		return
 	to_remove = []
 	for strim in strims:
+		print strim, strims[strim]
 		if(strims[strim] <= 0):
+			print "queueing removal of", strim
 			to_remove.append(strim)
 	if(len(to_remove) > 0):
+		print "going to remove these:", to_remove
 		num_deleted = r.hdel('strims', to_remove)
-		print "deleted this many strims: ", str(num_deleted), "should have deleted this many: ", str(len(to_remove)) 
-
-@tornado.gen.engine
-def remove_viewer(v_id):
-	global c
-	in_clients = yield tornado.gen.Task(c.hexists, 'clients', v_id)
-	strim = yield tornado.gen.Task(c.hget, 'clients', v_id)
-	if in_clients:
-		if strim != '':
-			new_count = yield tornado.gen.Task(c.hincrby, 'strims', strim, -1)
-			if new_count <= 0:
-				num_deleted = yield tornado.gen.Task(c.hdel, 'strims', strim)
-				if num_deleted == 0:
-					print "deleting this strim counter did not work : ", strim 
-		else:
-			print 'deleting a client that was not tied to a strim:', v_id
-		clients_deleted = yield tornado.gen.Task(c.hdel, 'clients', v_id)
-	pong_times_deleted = yield tornado.gen.Task(c.hdel, 'last_pong_time', v_id)
-	if pong_times_deleted == 0:
-		print "redis:", pong_times_deleted, v_id, "deleting this pong tracker was redundant"
-	print str(numClients()) + " viewers remain connected"
+		print "deleted this many strims:", str(num_deleted), "should have deleted this many: ", str(len(to_remove)) 
 
 #ayy lmao
 #if self.is_enlightened_by(self.intelligence):
@@ -127,9 +124,9 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 		clients[self.id] = {'id': self.id}
 		client_set_or_updated = yield tornado.gen.Task(self.client.hset, 'clients', self.id, '')
 		if client_set_or_updated == 1:
-			print "redis: ", client_set_or_updated, "creating new client id: ", self.id
+			print "redis:", client_set_or_updated, "creating new client id: ", self.id
 		else:
-			print "redis: ", client_set_or_updated, "WARN: updating old client id: ", self.id
+			print "redis:", client_set_or_updated, "WARN: updating old client id: ", self.id
 		lpt_set_or_updated = yield tornado.gen.Task(self.client.hset, 'last_pong_time', self.id, time.time())
 		if lpt_set_or_updated == 1:
 			print "redis:", lpt_set_or_updated, "creating last_pong_time on open with:", self.id
@@ -144,26 +141,28 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 	def on_connection_timeout(self):
 		print "-- Client timed out due to PINGs without PONGs"
 		# this might be redundant and redundant
-		remove_viewer(self.id)
+		# don't ping them pointlessly
+		self.remove_viewer()
 		self.close()
 
 	@tornado.gen.engine
 	def send_ping(self):
-
-		print("<- [PING]", self.id)
-		try:
-			self.ping(self.id)
-			# global ping_every
-			self.ping_timeout = self.io_loop.add_timeout(datetime.timedelta(seconds=ping_every), self.on_connection_timeout)
-		except Exception as ex:
-			print("-- ERROR: Failed to send ping! to: "+ self.id + " because of " + repr(ex))
-			self.on_connection_timeout()
+		in_clients = yield tornado.gen.Task(c.hexists, 'clients', self.id)
+		if in_clients:
+			print "<- [PING]", self.id
+			try:
+				self.ping(self.id)
+				# global ping_every
+				self.ping_timeout = self.io_loop.add_timeout(datetime.timedelta(seconds=ping_every), self.on_connection_timeout)
+			except Exception as ex:
+				print "-- ERROR: Failed to send ping!", "to: "+ self.id + " because of " + repr(ex)
+				self.on_connection_timeout()
 		
 	@tornado.gen.engine
 	def on_pong(self, data):
 		# We received a pong, remove the timeout so that we don't
 		# kill the connection.
-		print("-> [PONG]", data)
+		print "-> [PONG]", data
 
 		if hasattr(self, "ping_timeout"):
 			self.io_loop.remove_timeout(self.ping_timeout)
@@ -218,8 +217,35 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 	@tornado.gen.engine
 	def on_close(self):
 		print 'Closed Websocket connection: (' + self.request.remote_ip + ') ' + socket.getfqdn(self.request.remote_ip)+ " id: "+self.id
-		global remove_viewer
-		remove_viewer(self.id)
+				# don't ping them pointlessly
+		self.remove_viewer()
+
+	@tornado.gen.engine
+	def remove_viewer(self):
+		if hasattr(self, "ping_timeout"):
+			self.io_loop.remove_timeout(self.ping_timeout)
+		global c
+		v_id = self.id
+		in_clients = yield tornado.gen.Task(c.hexists, 'clients', v_id)
+		if in_clients:
+			strim = yield tornado.gen.Task(c.hget, 'clients', v_id)
+			#####
+			# if strim lists get ugly and problematic, 
+			# have this just send a message to the .sync client 
+			# and queue a sweep
+			if strim != '':
+				new_count = yield tornado.gen.Task(c.hincrby, 'strims', strim, -1)
+				if new_count <= 0:
+					num_deleted = yield tornado.gen.Task(c.hdel, 'strims', strim)
+					if num_deleted == 0:
+						print "deleting this strim counter did not work : ", strim 
+			else:
+				print 'deleting a client that was not tied to a strim:', v_id
+			clients_deleted = yield tornado.gen.Task(c.hdel, 'clients', v_id)
+		pong_times_deleted = yield tornado.gen.Task(c.hdel, 'last_pong_time', v_id)
+		if pong_times_deleted == 0:
+			print "redis:", pong_times_deleted, v_id, "deleting this pong tracker was redundant"
+		print str(numClients()) + " viewers remain connected"
 
 #print console updates
 printStatus()
