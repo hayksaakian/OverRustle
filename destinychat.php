@@ -59,8 +59,9 @@ if(empty($t))
         });
       } 
     </script>
+  <script type="text/javascript" src="/js/reconnecting-websocket.js"></script>
    <script>
-    var ws = new WebSocket("ws://OverRustle.com:9998/ws");
+    var ws = new ReconnectingWebSocket("ws://OverRustle.com:9998/ws");
 
     var sendObj = new Object();
     sendObj.strim = "/destinychat?s=<?php echo $s ?>&stream=<?php echo $stream; ?>";
