@@ -62,17 +62,22 @@ def sweepClients():
 #remove the dict key if nobody is watching DaFeels
 @tornado.gen.engine
 def sweepStreams():
-	strims = yield tornado.gen.Task(c.hgetall, 'strims')
-	if isinstance(strims, int):
-		print 'got', strims, 'instead of actual strims'
-		return
-	to_remove = []
-	for strim in strims:
-		if(strims[strim] <= 0):
-			to_remove.append(strim)
-	num_deleted = yield tornado.gen.Task(c.hdel, 'strims', to_remove)
-	print "deleted this many strims: ", str(num_deleted)
-	print "should have deleted this many: ", str(len(to_remove)) 
+	try:
+		strims = yield tornado.gen.Task(c.hgetall, 'strims')
+	except Exception, e:
+		print 'ERROR: Failed to get all strims from redis in order to sweep'
+		print e
+	else:
+		if isinstance(strims, int):
+			print 'got', strims, 'instead of actual strims'
+			return
+		to_remove = []
+		for strim in strims:
+			if(strims[strim] <= 0):
+				to_remove.append(strim)
+		num_deleted = yield tornado.gen.Task(c.hdel, 'strims', to_remove)
+		print "deleted this many strims: ", str(num_deleted)
+		print "should have deleted this many: ", str(len(to_remove)) 
 
 @tornado.gen.engine
 def remove_viewer(v_id):
@@ -134,7 +139,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 	
 	@tornado.gen.engine
 	def on_connection_timeout(self):
-		print "-- Client timed out after 1 minute"
+		print "-- Client timed out due to PINGs without PONGs"
 		# this might be redundant and redundant
 		remove_viewer(self.id)
 		self.close()
@@ -148,7 +153,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 			# global ping_every
 			self.ping_timeout = self.io_loop.add_timeout(datetime.timedelta(seconds=ping_every), self.on_connection_timeout)
 		except Exception as ex:
-			print("-- Failed to send ping! to: "+ self.id + " because of " + repr(ex))
+			print("-- ERROR: Failed to send ping! to: "+ self.id + " because of " + repr(ex))
 			self.on_connection_timeout()
 		
 	@tornado.gen.engine
@@ -191,8 +196,13 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 			print 'User Connected: Watching %s' % (strim)
 
 		elif action == "viewerCount":
-			strim_count = yield tornado.gen.Task(self.client.hget, 'strims', strim)
-			self.write_message(str(strim_count) + " OverRustle.com Viewers")
+			try:
+				strim_count = yield tornado.gen.Task(self.client.hget, 'strims', strim)			
+			except Exception, e:
+				print "ERROR: (with " +strim+ ") failed to get the viewer count for this strim"
+				print e
+			else:
+				self.write_message(str(strim_count) + " OverRustle.com Viewers")
 
 		elif action == "api":
 			self.write_message(json.dumps({"streams":strimCounts(), "totalviewers":numClients}))
