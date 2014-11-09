@@ -67,23 +67,7 @@ def sweepStreams():
 		return
 	to_remove = []
 	for strim in strims:
-<<<<<<< HEAD
-<<<<<<< HEAD
 		if(strims[strim] <= 0):
-=======
-<<<<<<< HEAD
-<<<<<<< HEAD
-		if(strims[strim] <= 0):
-=======
-		if(len(strims[strim]) == 0):
->>>>>>> bugfix
-=======
-		if(len(strims[strim]) == 0):
->>>>>>> bugfix
->>>>>>> bugfix
-=======
-		if(strims[strim] <= 0):
->>>>>>> delete many at once vs one at a time
 			to_remove.append(strim)
 	num_deleted = yield tornado.gen.Task(c.hdel, 'strims', to_remove)
 	print "deleted this many strims: ", str(num_deleted)
@@ -134,52 +118,16 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 		clients[self.id] = {'id': self.id}
 		client_set_or_updated = yield tornado.gen.Task(self.client.hset, 'clients', self.id, '')
 		if client_set_or_updated == 1:
-			print client_set_or_updated, " creating new client id: ", self.id
+			print client_set_or_updated, "creating new client id: ", self.id
 		else:
-			print client_set_or_updated, " WARN: updating old client id: ", self.id
+			print client_set_or_updated, "WARN: updating old client id: ", self.id
 		len_clients = yield tornado.gen.Task(self.client.hlen, 'clients')
-<<<<<<< HEAD
-		print len_clients
-		res = yield tornado.gen.Task(self.client.hset, 'last_pong_time', self.id, time.time())
-		if res != True:
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> distinguish two lines
-			print "creating last_pong_time on open is messed up with:", self.id, res
-=======
-			print "creating last_pong_time is messed up with:", self.id, res
->>>>>>> ravenously record redis responses
-=======
-			print "creating last_pong_time on open is messed up with:", self.id, res
->>>>>>> distinguish two lines
-<<<<<<< HEAD
-=======
-			print "creating last_pong_time is messed up with:", self.id, res
->>>>>>> ravenously record redis responses
-=======
-			print "creating last_pong_time on open is messed up with:", self.id, res
->>>>>>> distinguish two lines
-=======
-			print "creating last_pong_time on open is messed up with:", self.id, res
-=======
-			print "creating last_pong_time is messed up with:", self.id, res
->>>>>>> ravenously record redis responses
->>>>>>> ravenously record redis responses
-=======
->>>>>>> distinguish two lines
-=======
 		print 'len_clients is ', len_clients
 		lpt_set_or_updated = yield tornado.gen.Task(self.client.hset, 'last_pong_time', self.id, time.time())
 		if lpt_set_or_updated == 1:
 			print lpt_set_or_updated, "creating last_pong_time on open with:", self.id, lpt_set_or_updated
 		else:
 			print lpt_set_or_updated, "WARN: updating last_pong_time on open with:", self.id, lpt_set_or_updated
->>>>>>> extra comments
 		# Ping to make sure the agent is alive.
 		self.io_loop.add_timeout(datetime.timedelta(seconds=(ping_every/3)), self.send_ping)
 	
@@ -215,36 +163,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 		if in_clients:
 			res = yield tornado.gen.Task(c.hset, 'last_pong_time', self.id, time.time())
 			if res != True:
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 				print "creating last_pong_time on_pong is messed up with:", self.id, res
-=======
-				print "creating last_pong_time is messed up with:", self.id, res
->>>>>>> ravenously record redis responses
-=======
-=======
->>>>>>> distinguish two lines
-				print "creating last_pong_time on_pong is messed up with:", self.id, res
->>>>>>> distinguish two lines
-=======
-				print "creating last_pong_time is messed up with:", self.id, res
->>>>>>> ravenously record redis responses
-=======
-				print "creating last_pong_time on_pong is messed up with:", self.id, res
->>>>>>> distinguish two lines
-<<<<<<< HEAD
-=======
-				print "creating last_pong_time on_pong is messed up with:", self.id, res
-=======
-				print "creating last_pong_time is messed up with:", self.id, res
->>>>>>> ravenously record redis responses
->>>>>>> ravenously record redis responses
-=======
->>>>>>> distinguish two lines
 			# Wait some seconds before pinging again.
 			global ping_every
 			self.io_loop.add_timeout(datetime.timedelta(seconds=ping_every), self.send_ping)
@@ -255,38 +174,40 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 		global numClients
 		global clients
 		fromClient = json.loads(message)
+		action = fromClient[u'action']
+		strim = fromClient[u'strim']
 
-		if fromClient[u'strim'] == "/destinychat?s=strims&stream=":
-			fromClient[u'strim'] = "/destinychat"
+		if strim == "/destinychat?s=strims&stream=":
+			strim = "/destinychat"
 
 		#handle session counting - This is a fucking mess :^(
-		if fromClient[u'action'] == "join":
-			res = yield tornado.gen.Task(self.client.hset, 'clients', self.id, fromClient[u'strim'])
+		if action == "join":
+			res = yield tornado.gen.Task(self.client.hset, 'clients', self.id, strim)
 			if res != True:
 				print "joining strim is messed up with:", self.id, res
-			strim_count = yield tornado.gen.Task(self.client.hincrby, 'strims', fromClient[u'strim'], 1)
+			strim_count = yield tornado.gen.Task(self.client.hincrby, 'strims', strim, 1)
 			self.write_message(str(strim_count) + " OverRustle.com Viewers")
-			print 'User Connected: Watching %s' % (fromClient[u'strim'])
+			print 'User Connected: Watching %s' % (strim)
 
-		elif fromClient[u'action'] == "unjoin":
-			print 'User Disconnected: Was Watching %s' % (fromClient[u'strim'])
+		elif action == "unjoin":
+			print 'User Disconnected: Was Watching %s' % (strim)
 			self.on_connection_timeout()
 
-		elif fromClient[u'action'] == "viewerCount":
-			strim_count = yield tornado.gen.Task(self.client.hget, 'strims', fromClient[u'strim'])
+		elif action == "viewerCount":
+			strim_count = yield tornado.gen.Task(self.client.hget, 'strims', strim)
 			self.write_message(str(strim_count) + " OverRustle.com Viewers")
 
-		elif fromClient[u'action'] == "api":
+		elif action == "api":
 			self.write_message(json.dumps({"streams":strimCounts(), "totalviewers":numClients}))
 
 		else:
-			print 'WTF: Client sent unknown command >:( %s' % (fromClient[u'action'])
+			print 'WTF: Client sent unknown command >:( %s' % (action)
 
 
 		#remove the dict key if nobody is watching DaFeels
-		strim_count = yield tornado.gen.Task(self.client.hget, 'strims', fromClient[u'strim'])
+		strim_count = yield tornado.gen.Task(self.client.hget, 'strims', strim)
 		if strim_count <= 0:
-			num_deleted = yield tornado.gen.Task(c.hdel, 'strims', fromClient[u'strim'])
+			num_deleted = yield tornado.gen.Task(c.hdel, 'strims', strim)
 			if num_deleted == 0:
 				print "removing strim is messed up with:", self.id, "num_deleted is ", str(num_deleted)
 
