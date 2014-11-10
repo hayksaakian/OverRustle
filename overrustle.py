@@ -123,16 +123,16 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 		self.id = str(uuid.uuid4())
 		print 'Opened Websocket connection: (' + self.request.remote_ip + ') ' + socket.getfqdn(self.request.remote_ip) + " id: " + self.id
 		clients[self.id] = {'id': self.id}
-		client_set_or_updated = yield tornado.gen.Task(self.client.hset, 'clients', self.id, '')
-		if client_set_or_updated == 1:
-			print "redis:", client_set_or_updated, "creating new client id: ", self.id
-		else:
-			print "redis:", client_set_or_updated, "WARN: updating old client id: ", self.id
 		lpt_set_or_updated = yield tornado.gen.Task(self.client.hset, 'last_pong_time', self.id, time.time())
 		if lpt_set_or_updated == 1:
 			print "redis:", lpt_set_or_updated, "creating last_pong_time on open with:", self.id
 		else:
 			print "redis:", lpt_set_or_updated, "WARN: updating last_pong_time on open with:", self.id, lpt_set_or_updated
+		client_set_or_updated = yield tornado.gen.Task(self.client.hset, 'clients', self.id, '')
+		if client_set_or_updated == 1:
+			print "redis:", client_set_or_updated, "creating new client id: ", self.id
+		else:
+			print "redis:", client_set_or_updated, "WARN: updating old client id: ", self.id
 		len_clients = yield tornado.gen.Task(self.client.hlen, 'clients')
 		print 'len_clients is', len_clients
 		# Ping to make sure the agent is alive.
