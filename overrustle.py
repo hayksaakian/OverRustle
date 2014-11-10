@@ -36,7 +36,7 @@ def numClients():
 
 #takes care of updating console
 def printStatus():
-	trd = threading.Timer(2, printStatus)
+	trd = threading.Timer(4, printStatus)
 	trd.daemon = True # lets us use Ctrl+C to kill python's threads
 	trd.start()
 	print str(numClients()), 'clients connected right now'
@@ -68,7 +68,8 @@ def sweepClients():
 		# with the sync code
 		# decrement the appropriate stream, unless there isn't one
 		if clients[client_id] != "" and clients[client_id] != None:
-			new_count = r.hincrby(clients[client_id], -1)
+			# TODO: switch to hash len
+			new_count = r.hincrby('strims', clients[client_id], -1)
 			if new_count <= 0:
 				r.hdel('strims', clients[client_id])
 		print 'done removing', client_id
@@ -195,6 +196,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 			if created_or_updated_client != 1:
 				# 1 means the already existing key was updated, 0 means it was created
 				print "joining strim is messed up with:", self.id, created_or_updated_client
+			# TODO: switch to hash len count
 			strim_count = yield tornado.gen.Task(self.client.hincrby, 'strims', strim, 1)
 			self.write_message(str(strim_count) + " OverRustle.com Viewers")
 			print 'User Connected: Watching %s' % (strim)
@@ -234,6 +236,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 			# have this just send a message to the .sync client 
 			# and queue a sweep
 			if strim != '':
+				# TODO: switch to hash with len
 				new_count = yield tornado.gen.Task(c.hincrby, 'strims', strim, -1)
 				if new_count <= 0:
 					num_deleted = yield tornado.gen.Task(c.hdel, 'strims', strim)
@@ -241,6 +244,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 						print "deleting this strim counter did not work : ", strim 
 			else:
 				print 'deleting a client that was not tied to a strim:', v_id
+			#####
 			clients_deleted = yield tornado.gen.Task(c.hdel, 'clients', v_id)
 		pong_times_deleted = yield tornado.gen.Task(c.hdel, 'last_pong_time', v_id)
 		if pong_times_deleted == 0:
