@@ -128,7 +128,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 			print "redis:", lpt_set_or_updated, "creating last_pong_time on open with:", self.id
 		else:
 			print "redis:", lpt_set_or_updated, "WARN: updating last_pong_time on open with:", self.id, lpt_set_or_updated
-		client_set_or_updated = yield tornado.gen.Task(self.client.hset, 'clients', self.id, '')
+		client_set_or_updated = yield tornado.gen.Task(self.client.hset, 'clients', self.id, 'connecting')
 		if client_set_or_updated == 1:
 			print "redis:", client_set_or_updated, "creating new client id: ", self.id
 		else:
