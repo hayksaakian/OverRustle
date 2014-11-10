@@ -55,7 +55,6 @@ def printStatus():
 	trd.start()
 	print str(numClients()), 'clients connected right now'
 	sweepClients()
-	sweepStreams()
 	strim_counts = strimCounts()
 	# print len(strim_counts), "unique strims"
 	for key, value in strim_counts.items():
@@ -69,6 +68,7 @@ def sweepClients():
 		return
 	to_remove = []
 	expire_time = (time.time()-(3*ping_every))
+	strims = {}
 	for client_id in clients:
 		# client = clients[client_id]
 		lpt = r.hget('last_pong_time', client_id)
@@ -76,43 +76,25 @@ def sweepClients():
 		if (((lpt == '') or (lpt == None)) or (float(lpt) < expire_time)):
 			# if(("last_pong_time" in client) and (client["last_pong_time"] < (t_now-(5*ping_every)))):
 			to_remove.append(client_id)
-	for client_id in to_remove:
-		print "removing", client_id
-		# don't call remove_viewer because it's async and causes a race condition
-		# with the sync code
-		# decrement the appropriate stream, unless there isn't one
-		if clients[client_id] != "" and clients[client_id] != None:
-			# TODO: switch to hash len
-			new_count = r.hincrby('strims', clients[client_id], -1)
-			if new_count <= 0:
-				r.hdel('strims', clients[client_id])
-		print 'done removing', client_id
+		else:
+			# build the streams list, to sync with the actual viewer counts
+			strims[clients[client_id]] = strims.get(clients[client_id], 0) + 1
+	# using a pipeline to ensure that the api always has something for strims
+	pipe = r.pipeline()
+	pipe.delete('strims')
+	offset = 0
+	if len(strims) > 0:
+		pipe.hmset('strims', strims)
+		offset = -1
 	if len(to_remove) > 0:
-		lpts_removed = r.hdel('last_pong_time', *to_remove)
-		clients_removed = r.hdel('clients', *to_remove)
+		pipe.hdel('last_pong_time', *to_remove)
+		pipe.hdel('clients', *to_remove)
+	responses = pipe.execute()
+	# print responses
+	if len(responses) == (4+offset):
+		lpts_removed = responses[2+offset]
+		clients_removed = responses[3+offset]
 		print 'done removing all', lpts_removed, 'out of', len(to_remove), 'last_pong_time entries', clients_removed, 'out of', len(to_remove), 'clients', to_remove
-
-#remove the dict key if nobody is watching DaFeels
-def sweepStreams():
-	try:
-		strims = r.hgetall('strims')
-	except Exception, e:
-		print 'ERROR: Failed to get all strims from redis in order to sweep'
-		print e
-		return
-	if isinstance(strims, int):
-		print 'got', strims, 'instead of actual strims'
-		return
-	to_remove = []
-	for strim in strims:
-		print strim, strims[strim]
-		if(strims[strim] <= 0):
-			print "queueing removal of", strim
-			to_remove.append(strim)
-	if(len(to_remove) > 0):
-		print "going to remove these:", to_remove
-		num_deleted = r.hdel('strims', to_remove)
-		print "deleted this many strims:", str(num_deleted), "should have deleted this many: ", str(len(to_remove)) 
 
 #ayy lmao
 #if self.is_enlightened_by(self.intelligence):
@@ -207,17 +189,21 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 		#handle session counting - This is a fucking mess :^(
 		if action == "join":
 			created_or_updated_client = yield tornado.gen.Task(self.client.hset, 'clients', self.id, strim)
-			if created_or_updated_client != 1:
+			if created_or_updated_client not in [0, 1]:
 				# 1 means the already existing key was updated, 0 means it was created
 				print "joining strim is messed up with:", self.id, created_or_updated_client
-			# TODO: switch to hash len count
-			strim_count = yield tornado.gen.Task(self.client.hincrby, 'strims', strim, 1)
-			self.write_message(str(strim_count) + " OverRustle.com Viewers")
-			print 'User Connected: Watching %s' % (strim)
+			try:
+				strim_count = yield tornado.gen.Task(self.client.hget, 'strims', strim)
+			except Exception, e:
+				print "ERROR: (with " +strim+ ") failed to get the viewer count for this strim"
+				print e
+			else:
+				self.write_message(str(strim_count) + " OverRustle.com Viewers")
+				print 'User Connected: Watching %s' % (strim)
 
 		elif action == "viewerCount":
 			try:
-				strim_count = yield tornado.gen.Task(self.client.hget, 'strims', strim)			
+				strim_count = yield tornado.gen.Task(self.client.hget, 'strims', strim)
 			except Exception, e:
 				print "ERROR: (with " +strim+ ") failed to get the viewer count for this strim"
 				print e
@@ -244,22 +230,9 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 		v_id = self.id
 		in_clients = yield tornado.gen.Task(c.hexists, 'clients', v_id)
 		if in_clients:
-			strim = yield tornado.gen.Task(c.hget, 'clients', v_id)
-			#####
-			# if strim lists get ugly and problematic, 
-			# have this just send a message to the .sync client 
-			# and queue a sweep
-			if strim != '':
-				# TODO: switch to hash with len
-				new_count = yield tornado.gen.Task(c.hincrby, 'strims', strim, -1)
-				if new_count <= 0:
-					num_deleted = yield tornado.gen.Task(c.hdel, 'strims', strim)
-					if num_deleted == 0:
-						print "deleting this strim counter did not work : ", strim 
-			else:
-				print 'deleting a client that was not tied to a strim:', v_id
-			#####
 			clients_deleted = yield tornado.gen.Task(c.hdel, 'clients', v_id)
+			if clients_deleted == 0:
+				print "redis:", clients_deleted, v_id, "deleting this client was redundant"
 		pong_times_deleted = yield tornado.gen.Task(c.hdel, 'last_pong_time', v_id)
 		if pong_times_deleted == 0:
 			print "redis:", pong_times_deleted, v_id, "deleting this pong tracker was redundant"
