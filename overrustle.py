@@ -12,6 +12,7 @@ import time
 import datetime
 import random
 import uuid
+from collections import OrderedDict 
 
 #dem variables
 # redis
@@ -24,11 +25,24 @@ strims = {}
 clients = {}
 ping_every = 15
 
+def apiDump():
+	counts = strimCounts()
+	totalviewers = 0
+	for strim in counts:
+		totalviewers = totalviewers + num(counts[strim])
+	sorted_counts = OrderedDict(sorted(counts.items(), key=lambda t: t[1]))
+	return {"streams":sorted_counts, "totalviewers":totalviewers,"totalclients":numClients()}
+
 def strimCounts():
+	def num(s):
+		try:
+			return int(s)
+		except ValueError:
+			return float(s)
 	strims = r.hgetall('strims') or []
 	counts = {}
 	for strim in strims:
-		counts[strim] = strims[strim]
+		counts[strim] = num(strims[strim])
 	return counts
 
 def numClients():
@@ -36,7 +50,7 @@ def numClients():
 
 #takes care of updating console
 def printStatus():
-	trd = threading.Timer(4, printStatus)
+	trd = threading.Timer(8, printStatus)
 	trd.daemon = True # lets us use Ctrl+C to kill python's threads
 	trd.start()
 	print str(numClients()), 'clients connected right now'
@@ -211,7 +225,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 				self.write_message(str(strim_count) + " OverRustle.com Viewers")
 
 		elif action == "api":
-			self.write_message(json.dumps({"streams":strimCounts(), "totalviewers":numClients}))
+			self.write_message(json.dumps(apiDump()))
 
 		else:
 			print 'WTF: Client sent unknown command >:( %s' % (action)
@@ -257,7 +271,7 @@ printStatus()
 #JSON api server
 class APIHandler(tornado.web.RequestHandler):
 		def get(self):
-				self.write(json.dumps({"streams":strimCounts(), "totalviewers":numClients()}))
+				self.write(json.dumps(apiDump()))
 
 #GET address handlers
 application = tornado.web.Application([
