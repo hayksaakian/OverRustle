@@ -29,7 +29,7 @@ def apiDump():
 	counts = strimCounts()
 	totalviewers = 0
 	for strim in counts:
-		totalviewers = totalviewers + num(counts[strim])
+		totalviewers = totalviewers + counts[strim]
 	sorted_counts = OrderedDict(sorted(counts.items(), key=lambda t: t[1]))
 	return {"streams":sorted_counts, "totalviewers":totalviewers,"totalclients":numClients()}
 
