@@ -73,8 +73,12 @@ def sweepClients():
 	to_remove = []
 	expire_time = (time.time()-(3*ping_every))
 	strims = {}
+	all_strims = []
 	for client_id in clients:
 		# client = clients[client_id]
+		strim = clients[client_id]
+		if strim not in all_strims:
+			all_strims.append(strim)
 		lpt = r.hget('last_pong_time', client_id)
 		# print lpt, expire_time
 		if (((lpt == '') or (lpt == None)) or (float(lpt) < expire_time)):
@@ -82,22 +86,22 @@ def sweepClients():
 			to_remove.append(client_id)
 		else:
 			# build the streams list, to sync with the actual viewer counts
-			strims[clients[client_id]] = strims.get(clients[client_id], 0) + 1
+			strims[strim] = strims.get(strim, 0) + 1
 	# using a pipeline to ensure that the api always has something for strims
 	pipe = r.pipeline()
-	pipe.delete('strims')
-	offset = 0
-	if len(strims) > 0:
-		pipe.hmset('strims', strims)
-		offset = -1
 	if len(to_remove) > 0:
 		pipe.hdel('last_pong_time', *to_remove)
 		pipe.hdel('clients', *to_remove)
+	for strim in all_strims:
+		if strim in strims:
+			pipe.hset('strims', strim, strims[strim])
+		else:
+			pipe.hdel('strims', strim)
 	responses = pipe.execute()
 	# print responses
-	if len(responses) == (4+offset):
-		lpts_removed = responses[2+offset]
-		clients_removed = responses[3+offset]
+	if len(to_remove) > 0:
+		lpts_removed = responses[0]
+		clients_removed = responses[1]
 		print 'done removing all', lpts_removed, 'out of', len(to_remove), 'last_pong_time entries', clients_removed, 'out of', len(to_remove), 'clients', to_remove
 
 #ayy lmao
@@ -180,8 +184,6 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 
 	@tornado.gen.engine
 	def on_message(self, message):
-		global strims
-		global numClients
 		global clients
 		fromClient = json.loads(message)
 		action = fromClient[u'action']
