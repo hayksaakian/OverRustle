@@ -71,7 +71,7 @@ def sweepClients():
 		print 'got', clients, 'instead of actual clients'
 		return
 	to_remove = []
-	expire_time = (time.time()-(3*ping_every))
+	expire_time = (time.time()-(2*ping_every))
 	strims = {}
 	all_strims = []
 	for client_id in clients:
