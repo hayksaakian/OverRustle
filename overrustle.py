@@ -137,8 +137,12 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 			print "redis:", client_set_or_updated, "creating new client id: ", self.id
 		else:
 			print "redis:", client_set_or_updated, "WARN: updating old client id: ", self.id
-		len_clients = yield tornado.gen.Task(self.client.hlen, 'clients')
-		print 'len_clients is', len_clients
+		try:
+			len_clients = yield tornado.gen.Task(self.client.hlen, 'clients')
+			print 'len_clients is', len_clients
+		except Exception, e:
+			print "ERROR: (with redis) calling HLEN on \'clients\'"
+			print e
 		# Ping to make sure the agent is alive.
 		self.io_loop.add_timeout(datetime.timedelta(seconds=(ping_every/3)), self.send_ping)
 	
