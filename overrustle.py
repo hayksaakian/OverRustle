@@ -35,7 +35,7 @@ def apiDump():
 	totalviewers = totalviewers - idleclients
 	# remove 'connecting' from counts
 	sorted_counts.pop("connecting", None)
-	return {"streams":sorted_counts, "totalviewers":totalviewers,"totalclients":,"idleclients":idleclients}
+	return {"streams":sorted_counts, "totalviewers":totalviewers,"totalclients":numClients(),"idleclients":idleclients}
 
 def strimCounts():
 	def num(s):
