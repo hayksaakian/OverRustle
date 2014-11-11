@@ -28,10 +28,14 @@ ping_every = 15
 def apiDump():
 	counts = strimCounts()
 	totalviewers = 0
+	idleclients = counts.get("connecting", 0)
 	for strim in counts:
 		totalviewers = totalviewers + counts[strim]
-	sorted_counts = OrderedDict(sorted(counts.items(), key=lambda t: t[1]))
-	return {"streams":sorted_counts, "totalviewers":totalviewers,"totalclients":numClients()}
+	sorted_counts = OrderedDict(sorted(counts.items(), key=lambda t: t[1], reverse=True))
+	totalviewers = totalviewers - idleclients
+	# remove 'connecting' from counts
+	sorted_counts.pop("connecting", None)
+	return {"streams":sorted_counts, "totalviewers":totalviewers,"totalclients":,"idleclients":idleclients}
 
 def strimCounts():
 	def num(s):
