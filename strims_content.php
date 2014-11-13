@@ -12,11 +12,11 @@
         new_html = new_html + "<tr><td><a target='_blank' href='"+ strim +"'>"+ strim +"</a></td><td>~"+viewers+"</td></tr>"
       });
       $('#strims').html(new_html)
-      status = "<div class='label label-success col-md-4' role='alert'>Tracking server is currently offline.</div>"
+      status = "<div class='label label-success col-md-4' role='alert'>Tracking server is currently online.</div>"
       $('#status').html(status)
     })
     .fail(function( jqxhr, textStatus, error ) {
-      status = "<div class='label label-warning col-md-4' role='alert'>Tracking server is currently online.</div>"
+      status = "<div class='label label-warning col-md-4' role='alert'>Tracking server is currently offline.</div>"
       $('#status').html(status)
     });
   }
