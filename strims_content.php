@@ -4,7 +4,7 @@
   <div class="col-md-4"></div>
   <script type="text/javascript">
   function getStrims(){
-    $.getJSON("http://localhost:9998/api")
+    $.getJSON("http://OverRustle.com:6081/api")
     .done(function( json ) {
       $('#strims').html('')
       new_html = ""
@@ -21,6 +21,7 @@
     });
   }
   function ready(){
+    getStrims()
     setTimeout(getStrims, 5000)
   }
 
