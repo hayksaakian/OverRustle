@@ -107,7 +107,7 @@ def sweepClients():
 
 def isBad(s):
 	return True in [
-		re.search("[^A-z 0-9 \?\&\/=/:]", s),
+		re.search("[^A-z 0-9 \?\&\/=/:/-]", s),
 		len(s) > 128
 	]
 
