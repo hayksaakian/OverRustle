@@ -61,7 +61,7 @@ def printStatus():
 	trd.daemon = True # lets us use Ctrl+C to kill python's threads
 	trd.start()
 	print str(numClients()), 'clients connected right now'
-	# sweepClients()
+	sweepClients()
 	strim_counts = strimCounts()
 	# print len(strim_counts), "unique strims"
 	for key, value in strim_counts.items():
@@ -85,7 +85,8 @@ def sweepClients():
 		# print lpt, expire_time
 		if (((lpt == '') or (lpt == None)) or (float(lpt) < expire_time)):
 			# if(("last_pong_time" in client) and (client["last_pong_time"] < (t_now-(5*ping_every)))):
-			to_remove.append(client_id)
+			# TODO: re enable
+			# to_remove.append(client_id)
 		else:
 			# build the streams list, to sync with the actual viewer counts
 			strims[strim] = strims.get(strim, 0) + 1
