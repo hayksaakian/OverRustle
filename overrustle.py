@@ -111,16 +111,6 @@ def isBad(s):
 		len(s) > 128
 	]
 
-import re
-
-def slugify(value):
-    """
-    Normalizes string, converts to lowercase, removes non-alpha characters,
-    and converts spaces to hyphens.
-    """
-    value = re.sub('[^\w\s-]', '', value).strip().lower()
-    return re.sub('[-\s]+', '-', value)
-
 #ayy lmao
 #if self.is_enlightened_by(self.intelligence):
 #	self.is_euphoric = True
@@ -209,7 +199,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 		global clients
 		fromClient = json.loads(message)
 		action = fromClient[u'action']
-		strim = fromClient[u'strim']
+		strim = fromClient[u'strim'].lower()
 
 		if strim == "/destinychat?s=strims&stream=":
 			strim = "/destinychat"
