@@ -61,7 +61,7 @@ def printStatus():
 	trd.daemon = True # lets us use Ctrl+C to kill python's threads
 	trd.start()
 	print str(numClients()), 'clients connected right now'
-	sweepClients()
+	# sweepClients()
 	strim_counts = strimCounts()
 	# print len(strim_counts), "unique strims"
 	for key, value in strim_counts.items():
