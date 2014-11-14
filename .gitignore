@@ -222,3 +222,5 @@ destinychat_beta.php
 config.php
 composer.lock
 vendor/
+
+api/node_modules
