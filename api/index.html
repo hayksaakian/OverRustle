@@ -22,12 +22,8 @@
     <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
     <script>
       var socket = io();
-      
-      socket.on('disconnect', function(){
-        console.log('Disconnected from OverRustle.com Websocket Server >:(');
-      })
 
-      socket.on('join', function(strims){
+      socket.on('strims', function(strims){
         $('#messages').append($('<li>').text(JSON.stringify(strims)));
       });
 

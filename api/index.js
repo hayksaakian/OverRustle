@@ -30,15 +30,10 @@ function isGood(s){
 var strims = {}
 
 function getStrims () {
-  function viewercount(){
-    this.result = 0
-    for (var strim in io.strims){
-      this.result += io.strims[strim]
-    }
-    return this.result
-  }
   return {
-    'viewercount' : viewercount(),
+    'viewercount' : Object.keys(io.strims).reduce(function (previous, key) {
+      return previous + io.strims[key];
+    }, 0),
     'strims' : io.strims
   }
 }
@@ -58,7 +53,7 @@ io.on('connection', function(socket){
   }else{
     io.strims[strim] = 1
   }
-  io.emit('join', io.strims)
+  io.emit('strims', io.strims)
   socket.on('disconnect', function(){
     if(socket.hasOwnProperty('strim') && socket.strim in io.strims){
       io.strims[socket.strim] += -1
@@ -66,6 +61,7 @@ io.on('connection', function(socket){
         delete io.strims[socket.strim]
       }
       console.log('user disconnected from '+socket.strim);
+      io.emit('strims', io.strims)
     }
   });
 });
@@ -75,6 +71,7 @@ app.get('/api', function(req, res){
   res.send(getStrims());
 });
 
+// for debug to serve different urls
 app.get('/*', function(req, res){
   res.sendFile(__dirname + '/index.html');
 });
