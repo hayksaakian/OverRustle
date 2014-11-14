@@ -107,10 +107,19 @@ def sweepClients():
 
 def isBad(s):
 	return True in [
-		re.search(".", s),
+		re.search("[^A-z 0-9 \?\&\/=/:]", s),
 		len(s) > 128
 	]
 
+import re
+
+def slugify(value):
+    """
+    Normalizes string, converts to lowercase, removes non-alpha characters,
+    and converts spaces to hyphens.
+    """
+    value = re.sub('[^\w\s-]', '', value).strip().lower()
+    return re.sub('[-\s]+', '-', value)
 
 #ayy lmao
 #if self.is_enlightened_by(self.intelligence):
@@ -205,7 +214,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 			strim = "/destinychat"
 
 		if isBad(strim):
-			action = "gtfo. kys."
+			action = ""
 
 		#handle session counting - This is a fucking mess :^(
 		if action == "join":
