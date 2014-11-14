@@ -223,4 +223,4 @@ config.php
 composer.lock
 vendor/
 
-api/node_modules
+api/node_modules/
