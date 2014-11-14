@@ -107,8 +107,8 @@ def sweepClients():
 
 def isBad(s):
 	return True in [
-		re.search(".", strim),
-		len(strim) > 128
+		re.search(".", s),
+		len(s) > 128
 	]
 
 
