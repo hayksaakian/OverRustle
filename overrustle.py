@@ -72,7 +72,7 @@ def sweepClients():
 		print 'got', clients, 'instead of actual clients'
 		return
 	to_remove = []
-	expire_time = (time.time()-(2*ping_every))
+	expire_time = (time.time()-(3*ping_every))
 	strims = {}
 	all_strims = r.hkeys('strims') or []
 	for client_id in clients:
@@ -152,7 +152,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 			print "ERROR: (with redis) calling HLEN on \'clients\'"
 			print e
 		# Ping to make sure the agent is alive.
-		self.io_loop.add_timeout(datetime.timedelta(seconds=(ping_every/3)), self.send_ping)
+		self.send_ping
 	
 	@tornado.gen.engine
 	def on_connection_timeout(self):
