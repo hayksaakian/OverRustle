@@ -25,6 +25,7 @@ r = redis.StrictRedis()
 strims = {}
 clients = {}
 ping_every = 15
+sweep_every = 22
 
 def apiDump():
 	counts = strimCounts()
@@ -55,7 +56,7 @@ def numClients():
 
 #takes care of updating console
 def printStatus():
-	trd = threading.Timer(8, printStatus)
+	trd = threading.Timer(sweep_every, printStatus)
 	trd.daemon = True # lets us use Ctrl+C to kill python's threads
 	trd.start()
 	print str(numClients()), 'clients connected right now'
