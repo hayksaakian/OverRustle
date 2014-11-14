@@ -12,6 +12,7 @@ import time
 import datetime
 import random
 import uuid
+import re
 from collections import OrderedDict 
 
 #dem variables
@@ -104,6 +105,13 @@ def sweepClients():
 		clients_removed = responses[1]
 		print 'done removing all', lpts_removed, 'out of', len(to_remove), 'last_pong_time entries', clients_removed, 'out of', len(to_remove), 'clients', to_remove
 
+def isBad(s):
+	return True in [
+		re.search(".", strim),
+		len(strim) > 128
+	]
+
+
 #ayy lmao
 #if self.is_enlightened_by(self.intelligence):
 #	self.is_euphoric = True
@@ -195,6 +203,9 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 
 		if strim == "/destinychat?s=strims&stream=":
 			strim = "/destinychat"
+
+		if isBad(strim):
+			action = "gtfo. kys."
 
 		#handle session counting - This is a fucking mess :^(
 		if action == "join":
