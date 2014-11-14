@@ -206,6 +206,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 
 		if isBad(strim):
 			action = ""
+			print self.request.remote_ip +" might be a baddie"
 
 		#handle session counting - This is a fucking mess :^(
 		if action == "join":
