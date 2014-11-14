@@ -141,7 +141,8 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 	@tornado.gen.engine
 	def open(self):
 		global clients
-		self.id = str(uuid.uuid4())
+		self.id = str(self.request.remote_ip)+"~"+str(uuid.uuid4())
+
 		print 'Opened Websocket connection: (' + self.request.remote_ip + ') ' + socket.getfqdn(self.request.remote_ip) + " id: " + self.id
 		clients[self.id] = {'id': self.id}
 		lpt_set_or_updated = yield tornado.gen.Task(self.client.hset, 'last_pong_time', self.id, time.time())
