@@ -107,7 +107,7 @@ def sweepClients():
 
 def isBad(s):
 	return True in [
-		re.search("[^A-z 0-9 \?\&\/=/:/-]", s) is None,
+		re.search("[^A-z 0-9 \?\&\/=/:/-]", s) is not None,
 		len(s) > 128
 	]
 
@@ -197,6 +197,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 	@tornado.gen.engine
 	def on_message(self, message):
 		global clients
+		print "message: "+message
 		fromClient = json.loads(message)
 		action = fromClient[u'action']
 		strim = fromClient[u'strim'].lower()
