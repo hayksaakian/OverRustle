@@ -74,7 +74,7 @@ def sweepClients():
 	to_remove = []
 	expire_time = (time.time()-(2*ping_every))
 	strims = {}
-	all_strims = []
+	all_strims = r.hkeys('strims') or []
 	for client_id in clients:
 		# client = clients[client_id]
 		strim = clients[client_id]
