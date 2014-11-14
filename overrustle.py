@@ -26,6 +26,7 @@ strims = {}
 clients = {}
 ping_every = 15
 sweep_every = 22
+max_age = 50
 
 def apiDump():
 	counts = strimCounts()
@@ -67,13 +68,12 @@ def printStatus():
 		print key, value
 
 def sweepClients():
-	global ping_every
 	clients = r.hgetall('clients')
 	if isinstance(clients, int):
 		print 'got', clients, 'instead of actual clients'
 		return
 	to_remove = []
-	expire_time = (time.time()-(3*ping_every))
+	expire_time = (time.time()-(max_age))
 	strims = {}
 	all_strims = r.hkeys('strims') or []
 	for client_id in clients:
